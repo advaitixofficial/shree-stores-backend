@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: shree-stores-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false # User must set this in the Render dashboard!
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        sync: false # Optional: Set if you provision a Redis instance

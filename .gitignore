@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+dist/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Coverage
+coverage/
+
+# Uploads (temp)
+uploads/
+
+# Build
+*.js.map
+*.d.ts
