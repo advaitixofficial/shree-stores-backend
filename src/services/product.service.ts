@@ -197,4 +197,31 @@ export class ProductService {
 
     return product;
   }
+
+  /**
+   * Admin: Delete product
+   */
+  static async deleteProduct(id: string) {
+    const product = await Product.findById(id);
+    if (!product) throw new NotFoundError('Product not found');
+
+    // Delete images from Cloudinary
+    if (product.images && product.images.length > 0) {
+      await Promise.all(
+        product.images.map(img => deleteFromCloudinary(img.publicId))
+      );
+    } else if (product.thumbnail?.publicId) {
+      await deleteFromCloudinary(product.thumbnail.publicId);
+    }
+
+    // Decrement product count from category
+    if (product.category) {
+      await Category.findByIdAndUpdate(product.category, { $inc: { productCount: -1 } });
+    }
+
+    // Delete product from database
+    await Product.findByIdAndDelete(id);
+
+    return true;
+  }
 }

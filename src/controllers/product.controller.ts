@@ -86,4 +86,13 @@ export class ProductController {
       next(error);
     }
   }
+
+  static async deleteProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      await ProductService.deleteProduct(req.params.id);
+      sendSuccess(res, null, 'Product deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

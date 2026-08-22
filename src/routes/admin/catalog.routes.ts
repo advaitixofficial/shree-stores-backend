@@ -22,5 +22,6 @@ router.put('/products/:id', validate(updateProductSchema), ProductController.upd
 router.patch('/products/:id/stock', validate(updateStockSchema), ProductController.updateStock);
 router.post('/products/:id/images', upload.single('image'), ProductController.uploadImage);
 router.delete('/products/:id/images/:publicId', ProductController.deleteImage);
+router.delete('/products/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), ProductController.deleteProduct);
 
 export default router;
