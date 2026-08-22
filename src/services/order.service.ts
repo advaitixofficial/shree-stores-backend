@@ -31,17 +31,23 @@ export class OrderService {
       if (!cartVal.isValid || cartVal.validItems.length === 0) {
         throw new BadRequestError(cartVal.issues.join(', ') || 'Cart is empty');
       }
+      
+      // Minimum Order Validation
+      const minOrder = settings.codMinimumOrder || 100;
+      if (cartVal.subtotal < minOrder) {
+        throw new BadRequestError(`Minimum order amount is ₹${minOrder}`);
+      }
 
-      // 2. Validate Delivery Radius
+      // 2. Validate Delivery Radius and get distance
+      let distance = 0;
       if (settings.deliveryEnabled) {
-        const isWithin = require('../utils/geo').isWithinDeliveryRadius(
+        distance = require('../utils/geo').calculateDistanceInKm(
           settings.latitude,
           settings.longitude,
           address.latitude,
-          address.longitude,
-          settings.deliveryRadiusKm
+          address.longitude
         );
-        if (!isWithin) {
+        if (distance > settings.deliveryRadiusKm) {
           throw new BadRequestError(`Delivery is not available at this location (Max ${settings.deliveryRadiusKm} KM)`);
         }
       }
@@ -60,8 +66,13 @@ export class OrderService {
       // 4. Calculate final totals
       const totals = calculateOrderTotals(
         cartVal.validItems,
-        { deliveryFee: settings.deliveryFee, freeDeliveryMinimum: settings.freeDeliveryMinimum },
-        couponData as any
+        { 
+          deliveryFee: settings.deliveryFee, 
+          freeDeliveryMinimum: settings.freeDeliveryMinimum,
+          deliveryTiers: settings.deliveryTiers || [] 
+        },
+        couponData as any,
+        distance
       );
 
       // 5. Build order snapshot items

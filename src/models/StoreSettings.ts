@@ -17,9 +17,22 @@ const StoreSettingsSchema = new Schema<IStoreSettings>(
     
     // Delivery Configuration
     deliveryEnabled: { type: Boolean, default: true },
-    deliveryRadiusKm: { type: Number, required: true, default: 5 },
-    deliveryFee: { type: Number, required: true, default: 0 },
-    freeDeliveryMinimum: { type: Number, required: true, default: 0 },
+    deliveryRadiusKm: { type: Number, required: true, default: 40 },
+    deliveryFee: { type: Number, required: true, default: 0 }, // Base fallback fee
+    deliveryTiers: {
+      type: [
+        {
+          maxDistance: { type: Number, required: true },
+          fee: { type: Number, required: true }
+        }
+      ],
+      default: [
+        { maxDistance: 20, fee: 30 },
+        { maxDistance: 30, fee: 40 },
+        { maxDistance: 40, fee: 50 },
+      ]
+    },
+    freeDeliveryMinimum: { type: Number, required: true, default: 300 },
     estimatedDeliveryMinutes: { type: Number, required: true, default: 45 },
     
     // Formatting

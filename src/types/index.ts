@@ -369,6 +369,7 @@ export interface IStoreSettings extends Document {
   deliveryEnabled: boolean;
   deliveryRadiusKm: number;
   deliveryFee: number;
+  deliveryTiers: { maxDistance: number; fee: number }[];
   freeDeliveryMinimum: number;
   estimatedDeliveryMinutes: number;
   currency: string;

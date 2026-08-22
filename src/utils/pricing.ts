@@ -14,6 +14,7 @@ export interface OrderTotals {
 
 export interface DeliveryFeeConfig {
   deliveryFee: number;
+  deliveryTiers: { maxDistance: number; fee: number }[];
   freeDeliveryMinimum: number;
 }
 
@@ -31,15 +32,35 @@ export function calculateSubtotal(items: IOrderItem[]): number {
 }
 
 /**
- * Calculate delivery fee based on store configuration.
+ * Calculate delivery fee based on store configuration and distance.
  */
 export function calculateDeliveryFee(
   subtotal: number,
-  config: DeliveryFeeConfig
+  config: DeliveryFeeConfig,
+  distanceKm: number = 0
 ): number {
+  // Free delivery for orders above the minimum
   if (config.freeDeliveryMinimum > 0 && subtotal >= config.freeDeliveryMinimum) {
     return 0;
   }
+
+  // Free delivery under 10km
+  if (distanceKm <= 10) {
+    return 0;
+  }
+
+  // Find the applicable tier based on distance
+  if (config.deliveryTiers && config.deliveryTiers.length > 0) {
+    // Sort tiers by distance ascending to ensure correct matching
+    const sortedTiers = [...config.deliveryTiers].sort((a, b) => a.maxDistance - b.maxDistance);
+    
+    for (const tier of sortedTiers) {
+      if (distanceKm <= tier.maxDistance) {
+        return tier.fee;
+      }
+    }
+  }
+
   return config.deliveryFee;
 }
 
@@ -77,11 +98,12 @@ export function calculateCouponDiscount(
 export function calculateOrderTotals(
   items: IOrderItem[],
   deliveryFeeConfig: DeliveryFeeConfig,
-  coupon?: CouponDiscount
+  coupon?: CouponDiscount,
+  distanceKm: number = 0
 ): OrderTotals {
   const subtotal = calculateSubtotal(items);
   const discount = coupon ? calculateCouponDiscount(subtotal, coupon) : 0;
-  const deliveryFee = calculateDeliveryFee(subtotal - discount, deliveryFeeConfig);
+  const deliveryFee = calculateDeliveryFee(subtotal - discount, deliveryFeeConfig, distanceKm);
   const total = Math.max(0, subtotal - discount + deliveryFee);
 
   return {
