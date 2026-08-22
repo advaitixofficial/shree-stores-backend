@@ -29,14 +29,15 @@ export class ProductService {
       if (filters.maxPrice) query.price.$lte = filters.maxPrice;
     }
 
-    // Full-text search
+    // Partial-text search
     if (filters.q) {
-      const safeQuery = sanitizeSearch(filters.q);
-      query.$text = { $search: safeQuery };
-      // Sort by relevance if no sort provided
-      if (Object.keys(sort).length === 1 && sort.createdAt === -1) {
-        sort = { score: { $meta: 'textScore' } } as any;
-      }
+      const safeQuery = filters.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { name: { $regex: safeQuery, $options: 'i' } },
+        { nameHindi: { $regex: safeQuery, $options: 'i' } },
+        { sku: { $regex: safeQuery, $options: 'i' } },
+        { description: { $regex: safeQuery, $options: 'i' } }
+      ];
     }
 
     const [products, total] = await Promise.all([
