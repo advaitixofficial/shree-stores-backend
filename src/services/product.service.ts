@@ -1,7 +1,7 @@
 import { Product } from '../models/Product';
 import { Category } from '../models/Category';
 import { NotFoundError, BadRequestError } from '../utils/errors';
-import { buildPaginationMeta, generateSlug, sanitizeSearch } from '../utils/helpers';
+import { buildPaginationMeta, generateSlug } from '../utils/helpers';
 import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary';
 
 export class ProductService {
