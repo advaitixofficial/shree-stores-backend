@@ -66,13 +66,19 @@ export class NotificationService {
    */
   static async getCustomerNotifications(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
+    const BROADCAST_ID = new mongoose.Types.ObjectId('000000000000000000000000');
+    const query = {
+      recipientType: 'CUSTOMER',
+      $or: [{ recipientId: userId }, { recipientId: BROADCAST_ID }]
+    };
+
     const [notifications, total] = await Promise.all([
-      Notification.find({ recipientType: 'CUSTOMER', recipientId: userId })
+      Notification.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Notification.countDocuments({ recipientType: 'CUSTOMER', recipientId: userId }),
+      Notification.countDocuments(query),
     ]);
 
     return { notifications, pagination: buildPaginationMeta(total, page, limit) };

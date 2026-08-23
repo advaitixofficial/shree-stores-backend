@@ -59,7 +59,7 @@ export class CartService {
 
     // 4. Update items array
     const itemIndex = cart.items.findIndex(
-      (item) => item.product.toString() === productId
+      (item) => item.product?.toString() === productId
     );
 
     if (itemIndex > -1) {

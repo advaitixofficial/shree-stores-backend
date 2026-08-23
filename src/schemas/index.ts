@@ -9,6 +9,7 @@ export * from './coupon.schema';
 export * from './employee.schema';
 export * from './banner.schema';
 export * from './settings.schema';
+export * from './notification.schema';
 
 import { z } from 'zod';
 

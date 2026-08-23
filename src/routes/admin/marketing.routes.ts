@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { BannerController, CouponController } from '../../controllers';
+import { BannerController, CouponController, NotificationController } from '../../controllers';
 import { authenticateAdmin, requireRole, validate, upload } from '../../middleware';
-import { createBannerSchema, updateBannerSchema, createCouponSchema, updateCouponSchema } from '../../schemas';
+import { createBannerSchema, updateBannerSchema, createCouponSchema, updateCouponSchema, createNotificationSchema } from '../../schemas';
 
 const router = Router();
 
@@ -18,5 +18,8 @@ router.get('/coupons', CouponController.getCoupons);
 router.post('/coupons', validate(createCouponSchema), CouponController.createCoupon);
 router.put('/coupons/:id', validate(updateCouponSchema), CouponController.updateCoupon);
 router.delete('/coupons/:id', CouponController.deleteCoupon);
+
+// Push Notifications
+router.post('/notifications', validate(createNotificationSchema), NotificationController.sendAdminPushNotification);
 
 export default router;

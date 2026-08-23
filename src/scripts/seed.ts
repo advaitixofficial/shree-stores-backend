@@ -10,19 +10,23 @@ async function seed() {
     console.log('Seeding database...');
 
     // 1. Create Super Admin
-    const superAdminEmail = 'admin@shreestores.com';
+    const superAdminEmail = process.env.ADMIN_SEED_EMAIL || 'shreestoresandpackaging@gmail.com';
+    const superAdminPassword = process.env.ADMIN_SEED_PASSWORD || 'Rakeshnishant@#00000000';
+    
     const existingAdmin = await Admin.findOne({ email: superAdminEmail });
     if (!existingAdmin) {
       await Admin.create({
         name: 'Store Manager',
         email: superAdminEmail,
-        passwordHash: 'Admin@123', // Mongoose pre-save hook will hash this
+        passwordHash: superAdminPassword, // Mongoose pre-save hook will hash this
         role: 'SUPER_ADMIN',
         permissions: ['*'],
       });
       console.log(`[+] Super Admin created: ${superAdminEmail}`);
     } else {
-      console.log(`[-] Super Admin already exists: ${superAdminEmail}`);
+      existingAdmin.passwordHash = superAdminPassword;
+      await existingAdmin.save();
+      console.log(`[+] Super Admin password updated: ${superAdminEmail}`);
     }
 
     // 2. Create Default Store Settings
