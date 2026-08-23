@@ -34,6 +34,15 @@ export class NotificationController {
     }
   }
 
+  static async deleteAll(req: Request, res: Response, next: NextFunction) {
+    try {
+      await NotificationService.deleteAll(req.userId!);
+      sendSuccess(res, null, 'All notifications cleared');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ---- Admin Facing ----
 
   static async getAdminNotifications(req: Request, res: Response, next: NextFunction) {

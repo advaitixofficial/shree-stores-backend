@@ -120,4 +120,14 @@ export class NotificationService {
   static async markAllAsRead(recipientId: string | mongoose.Types.ObjectId) {
     await Notification.updateMany({ recipientId, isRead: false }, { $set: { isRead: true } });
   }
+
+  /**
+   * Delete all notifications for a recipient.
+   * Note: This only deletes personal notifications. Broadcasts are not deleted for the global recipientId,
+   * but we can just mark them as deleted for the specific user in a more advanced schema.
+   * For this simple schema, we just delete personal ones.
+   */
+  static async deleteAll(recipientId: string | mongoose.Types.ObjectId) {
+    await Notification.deleteMany({ recipientId });
+  }
 }
