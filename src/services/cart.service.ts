@@ -76,6 +76,9 @@ export class CartService {
       }
     }
 
+    // 5. Clean up any corrupted items (null product refs) before saving
+    cart.items = cart.items.filter((item) => item.product != null) as any;
+
     await cart.save();
     return this.getCart(userId);
   }
