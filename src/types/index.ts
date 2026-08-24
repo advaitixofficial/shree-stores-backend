@@ -336,6 +336,8 @@ export interface INotification extends Document {
   type: NotificationType;
   data?: Record<string, unknown>;
   isRead: boolean;
+  readBy?: Types.ObjectId[];
+  deletedBy?: Types.ObjectId[];
   createdAt: Date;
 }
 

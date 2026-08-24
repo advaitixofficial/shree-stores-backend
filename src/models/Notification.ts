@@ -12,6 +12,8 @@ const NotificationSchema = new Schema<INotification>(
     type: { type: String, required: true }, // NotificationType enum
     data: { type: Schema.Types.Mixed },
     isRead: { type: Boolean, default: false },
+    readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    deletedBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

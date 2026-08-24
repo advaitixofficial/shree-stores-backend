@@ -69,7 +69,8 @@ export class NotificationService {
     const BROADCAST_ID = new mongoose.Types.ObjectId('000000000000000000000000');
     const query = {
       recipientType: 'CUSTOMER',
-      $or: [{ recipientId: userId }, { recipientId: BROADCAST_ID }]
+      $or: [{ recipientId: userId }, { recipientId: BROADCAST_ID }],
+      deletedBy: { $ne: userId } // Do not fetch notifications deleted by this user
     };
 
     const [notifications, total] = await Promise.all([
@@ -81,7 +82,16 @@ export class NotificationService {
       Notification.countDocuments(query),
     ]);
 
-    return { notifications, pagination: buildPaginationMeta(total, page, limit) };
+    // Map broadcast notifications to set `isRead` correctly based on `readBy` array
+    const mappedNotifications = notifications.map((n: any) => {
+      if (n.recipientId.toString() === BROADCAST_ID.toString()) {
+        const hasRead = n.readBy && n.readBy.some((id: mongoose.Types.ObjectId) => id.toString() === userId.toString());
+        return { ...n, isRead: hasRead };
+      }
+      return n;
+    });
+
+    return { notifications: mappedNotifications, pagination: buildPaginationMeta(total, page, limit) };
   }
 
   /**
@@ -105,20 +115,35 @@ export class NotificationService {
    * Mark a notification as read.
    */
   static async markAsRead(id: string, recipientId?: string | mongoose.Types.ObjectId) {
-    const query: any = { _id: id };
-    if (recipientId) {
-      query.recipientId = recipientId;
+    const BROADCAST_ID = new mongoose.Types.ObjectId('000000000000000000000000');
+    const notification = await Notification.findById(id);
+    if (!notification) return null;
+
+    if (notification.recipientId.toString() === BROADCAST_ID.toString() && recipientId) {
+      // For broadcast notifications, add user to readBy array
+      return await Notification.findByIdAndUpdate(
+        id,
+        { $addToSet: { readBy: recipientId } },
+        { new: true }
+      ).lean();
     }
 
-    const notification = await Notification.findOneAndUpdate(query, { $set: { isRead: true } }, { new: true }).lean();
-    return notification;
+    // For personal notifications
+    const query: any = { _id: id };
+    if (recipientId) query.recipientId = recipientId;
+
+    return await Notification.findOneAndUpdate(query, { $set: { isRead: true } }, { new: true }).lean();
   }
 
   /**
    * Mark all notifications as read.
    */
   static async markAllAsRead(recipientId: string | mongoose.Types.ObjectId) {
+    const BROADCAST_ID = new mongoose.Types.ObjectId('000000000000000000000000');
+    // Mark personal notifications as read
     await Notification.updateMany({ recipientId, isRead: false }, { $set: { isRead: true } });
+    // Mark broadcast notifications as read for this user
+    await Notification.updateMany({ recipientId: BROADCAST_ID }, { $addToSet: { readBy: recipientId } });
   }
 
   /**
@@ -128,6 +153,15 @@ export class NotificationService {
    * For this simple schema, we just delete personal ones.
    */
   static async deleteAll(recipientId: string | mongoose.Types.ObjectId) {
+    const BROADCAST_ID = new mongoose.Types.ObjectId('000000000000000000000000');
+    
+    // Delete personal notifications completely
     await Notification.deleteMany({ recipientId });
+    
+    // Mark broadcast notifications as deleted for this specific user
+    await Notification.updateMany(
+      { recipientId: BROADCAST_ID },
+      { $addToSet: { deletedBy: recipientId } }
+    );
   }
 }
