@@ -48,6 +48,9 @@ const envSchema = z.object({
   OTP_EXPIRY_MINUTES: z.coerce.number().default(5),
   OTP_LENGTH: z.coerce.number().default(6),
 
+  // SMS (Fast2SMS)
+  FAST2SMS_API_KEY: z.string().default(''),
+
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
