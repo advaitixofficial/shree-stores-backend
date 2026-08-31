@@ -5,6 +5,7 @@ import { User } from '../models/User';
 import { generateOtp, normalizePhone } from '../utils/helpers';
 import { BadRequestError, UnauthorizedError } from '../utils/errors';
 import { logger } from '../utils/logger';
+import { SmsService } from './sms.service';
 
 export class AuthService {
   /**
@@ -30,9 +31,16 @@ export class AuthService {
     // Save OTP to Redis
     await redisOps.set(redisKey, otp, env.OTP_EXPIRY_MINUTES * 60);
 
-    // TODO: Integrate actual SMS gateway here (Twilio/AWS SNS/Msg91)
-    logger.info({ phone, otp }, 'OTP generated (simulate SMS send)');
+    // Send OTP via Fast2SMS
+    const smsSent = await SmsService.sendOtp(phone, otp);
 
+    if (!smsSent && env.NODE_ENV !== 'development') {
+      logger.warn({ phone }, 'SMS delivery failed, but OTP is stored in Redis');
+    }
+
+    logger.info({ phone }, 'OTP generated and delivery attempted');
+
+    // In development, return the OTP directly for testing
     return env.NODE_ENV === 'development' ? otp : 'OTP sent successfully';
   }
 

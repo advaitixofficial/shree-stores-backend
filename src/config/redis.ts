@@ -23,6 +23,8 @@ export async function connectRedis(): Promise<void> {
     redisClient = new Redis(env.REDIS_URL, {
       maxRetriesPerRequest: 3,
       retryStrategy(times) {
+        if (isDev) return null; // Don't retry in development, just fallback immediately
+        
         if (times > 5) {
           logger.warn('⚠️ Redis max retries reached, stopping reconnection');
           return null;
