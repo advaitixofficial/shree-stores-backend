@@ -58,6 +58,11 @@ const envSchema = z.object({
   // CORS
   CORS_ORIGIN: z.string().default('*'),
 
+  // Cashfree Payment Gateway
+  CASHFREE_APP_ID: z.string().default(''),
+  CASHFREE_SECRET_KEY: z.string().default(''),
+  CASHFREE_ENV: z.enum(['TEST', 'PRODUCTION']).default('TEST'),
+
   // Admin Seed
   ADMIN_SEED_EMAIL: z.string().default('admin@shreestores.com'),
   ADMIN_SEED_PASSWORD: z.string().default('Admin@123456'),

@@ -7,6 +7,7 @@ import addressRoutes from './address.routes';
 import orderRoutes from './order.routes';
 import publicRoutes from './public.routes';
 import notificationRoutes from './notification.routes';
+import paymentRoutes from './payment.routes';
 
 const router = Router();
 
@@ -18,5 +19,7 @@ router.use('/addresses', addressRoutes);
 router.use('/orders', orderRoutes);
 router.use('/public', publicRoutes); // covers config and banners
 router.use('/notifications', notificationRoutes);
+router.use('/payments', paymentRoutes);
 
 export default router;
+

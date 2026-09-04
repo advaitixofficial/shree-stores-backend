@@ -20,7 +20,7 @@ export async function connectDatabase(): Promise<void> {
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
       });
-
+      
       logger.info('✅ MongoDB connected successfully');
 
       mongoose.connection.on('error', (err) => {

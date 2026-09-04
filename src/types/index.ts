@@ -175,6 +175,7 @@ export interface IAddress extends Document {
 // ---- Order ----
 
 export type OrderStatus =
+  | 'PENDING_PAYMENT'
   | 'PLACED'
   | 'ACCEPTED'
   | 'REJECTED'

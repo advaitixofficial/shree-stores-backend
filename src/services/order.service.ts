@@ -107,6 +107,8 @@ export class OrderService {
 
       // 7. Create Order
       const orderNumber = await generateOrderNumber();
+      const isOnline = data.paymentMethod === 'ONLINE';
+      
       const [order] = await Order.create([{
         orderNumber,
         user: userId,
@@ -116,7 +118,7 @@ export class OrderService {
         coupon: couponData?._id,
         paymentMethod: data.paymentMethod,
         paymentStatus: 'PENDING',
-        orderStatus: 'PLACED',
+        orderStatus: isOnline ? 'PENDING_PAYMENT' : 'PLACED',
         notes: data.notes,
       }], { session });
 
@@ -129,7 +131,46 @@ export class OrderService {
 
       return order;
     }).then(async (order) => {
-      // Trigger notifications out-of-transaction (fire-and-forget)
+      const isOnline = order.paymentMethod === 'ONLINE';
+
+      // For ONLINE: Create Cashfree payment order
+      if (isOnline) {
+        try {
+          const { PaymentService } = require('./payment.service');
+          const user: any = await mongoose.model('User').findById(userId).lean();
+          const customerName = user?.firstName
+            ? `${user.firstName} ${user.lastName || ''}`.trim()
+            : 'Customer';
+          const rawPhone = user?.phone || '';
+          const digitsOnly = rawPhone.replace(/\D/g, ''); // Remove all non-digits
+          const customerPhone = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : '9999999999';
+
+          const cfOrder = await PaymentService.createCashfreeOrder({
+            orderId: order.orderNumber,
+            orderAmount: order.total,
+            customerPhone,
+            customerName,
+            customerId: userId,
+          });
+
+          // Return order with payment session
+          return {
+            ...order.toObject(),
+            paymentSessionId: cfOrder.payment_session_id,
+            cfOrderId: cfOrder.cf_order_id,
+            cashfreeEnv: PaymentService.getEnvironment(),
+          };
+        } catch (err: any) {
+          // If Cashfree fails, cancel the order
+          order.orderStatus = 'CANCELLED';
+          order.cancelReason = 'Payment gateway error';
+          order.cancelledBy = 'SYSTEM';
+          await order.save();
+          throw err;
+        }
+      }
+
+      // For COD: Trigger notifications
       NotificationService.createNotification({
         recipientType: 'CUSTOMER',
         recipientId: userId,

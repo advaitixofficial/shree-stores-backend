@@ -31,55 +31,113 @@ export class CartService {
     return cart;
   }
 
+
   /**
-   * Add or update product in cart.
+   * Add product to cart (increments quantity if already exists).
+   * Uses atomic MongoDB operations to prevent version conflicts on rapid taps.
    */
-  static async updateCartItem(userId: string, productId: string, quantity: number) {
-    // 1. Verify product exists and is active
+  static async addToCart(userId: string, productId: string, quantityToAdd: number = 1) {
     const product = await Product.findById(productId).select('isActive isAvailable stock').lean();
     if (!product) throw new NotFoundError('Product not found');
     if (!product.isActive || !product.isAvailable) {
       throw new BadRequestError('Product is currently unavailable');
     }
 
-    // 2. Validate requested quantity against stock
+    // Ensure cart exists
+    await Cart.findOneAndUpdate(
+      { user: userId },
+      { $setOnInsert: { user: userId, items: [] } },
+      { upsert: true }
+    );
+
+    // Check if item already exists in cart
+    const existingCart = await Cart.findOne(
+      { user: userId, 'items.product': productId },
+      { 'items.$': 1 }
+    ).lean();
+
+    if (existingCart && existingCart.items.length > 0) {
+      const currentQty = existingCart.items[0].quantity;
+      const newQty = currentQty + quantityToAdd;
+
+      if (newQty > product.stock) {
+        throw new BadRequestError(`Only ${product.stock} items in stock`);
+      }
+      if (newQty > MAX_CART_ITEM_QUANTITY) {
+        throw new BadRequestError(`Maximum ${MAX_CART_ITEM_QUANTITY} quantity allowed per item`);
+      }
+
+      // Atomic increment
+      await Cart.findOneAndUpdate(
+        { user: userId, 'items.product': productId },
+        { $inc: { 'items.$.quantity': quantityToAdd } }
+      );
+    } else {
+      if (quantityToAdd > product.stock) {
+        throw new BadRequestError(`Only ${product.stock} items in stock`);
+      }
+      // Atomic push
+      await Cart.findOneAndUpdate(
+        { user: userId },
+        { $push: { items: { product: new Types.ObjectId(productId), quantity: quantityToAdd } } }
+      );
+    }
+
+    return this.getCart(userId);
+  }
+
+  /**
+   * Set exact quantity for a product in cart.
+   * Uses atomic MongoDB operations to prevent version conflicts.
+   */
+  static async updateCartItem(userId: string, productId: string, quantity: number) {
+    const product = await Product.findById(productId).select('isActive isAvailable stock').lean();
+    if (!product) throw new NotFoundError('Product not found');
+    if (!product.isActive || !product.isAvailable) {
+      throw new BadRequestError('Product is currently unavailable');
+    }
+
     if (quantity > product.stock) {
       throw new BadRequestError(`Only ${product.stock} items in stock`);
     }
-
     if (quantity > MAX_CART_ITEM_QUANTITY) {
       throw new BadRequestError(`Maximum ${MAX_CART_ITEM_QUANTITY} quantity allowed per item`);
     }
 
-    // 3. Find or create cart
-    let cart = await Cart.findOne({ user: userId });
-    if (!cart) {
-      cart = new Cart({ user: userId, items: [] });
-    }
-
-    // 4. Update items array
-    const itemIndex = cart.items.findIndex(
-      (item) => item.product?.toString() === productId
+    // Ensure cart exists
+    await Cart.findOneAndUpdate(
+      { user: userId },
+      { $setOnInsert: { user: userId, items: [] } },
+      { upsert: true }
     );
 
-    if (itemIndex > -1) {
-      // Update existing item
-      if (quantity === 0) {
-        cart.items.splice(itemIndex, 1);
-      } else {
-        cart.items[itemIndex].quantity = quantity;
-      }
+    if (quantity <= 0) {
+      // Atomic pull (remove item)
+      await Cart.findOneAndUpdate(
+        { user: userId },
+        { $pull: { items: { product: productId } } }
+      );
     } else {
-      // Add new item
-      if (quantity > 0) {
-        cart.items.push({ product: new Types.ObjectId(productId), quantity });
+      // Check if item already exists
+      const exists = await Cart.findOne(
+        { user: userId, 'items.product': productId }
+      ).lean();
+
+      if (exists) {
+        // Atomic set quantity
+        await Cart.findOneAndUpdate(
+          { user: userId, 'items.product': productId },
+          { $set: { 'items.$.quantity': quantity } }
+        );
+      } else {
+        // Atomic push new item
+        await Cart.findOneAndUpdate(
+          { user: userId },
+          { $push: { items: { product: new Types.ObjectId(productId), quantity } } }
+        );
       }
     }
 
-    // 5. Clean up any corrupted items (null product refs) before saving
-    cart.items = cart.items.filter((item) => item.product != null) as any;
-
-    await cart.save();
     return this.getCart(userId);
   }
 

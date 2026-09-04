@@ -91,6 +91,7 @@ export const MANAGER_PERMISSIONS: Permission[] = [
 // ---- Order Status Transitions ----
 
 export const VALID_ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PENDING_PAYMENT: ['PLACED', 'CANCELLED'],
   PLACED: ['ACCEPTED', 'REJECTED', 'CANCELLED'],
   ACCEPTED: ['PREPARING', 'CANCELLED'],
   REJECTED: [],
@@ -102,11 +103,11 @@ export const VALID_ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 };
 
 export const CANCELLABLE_STATUSES: OrderStatus[] = [
-  'PLACED', 'ACCEPTED', 'PREPARING',
+  'PENDING_PAYMENT', 'PLACED', 'ACCEPTED', 'PREPARING',
 ];
 
 export const CUSTOMER_CANCELLABLE_STATUSES: OrderStatus[] = [
-  'PLACED',
+  'PENDING_PAYMENT', 'PLACED',
 ];
 
 // ---- Order Status Timestamps ----
