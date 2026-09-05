@@ -7,7 +7,7 @@ const AddressSchema = new Schema<IAddress>(
     label: { type: String, enum: ['HOME', 'WORK', 'OTHER'], default: 'HOME' },
     fullName: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
-    addressLine1: { type: String, required: true, trim: true },
+    addressLine1: { type: String, required: false, default: '', trim: true },
     addressLine2: { type: String, trim: true },
     landmark: { type: String, trim: true },
     city: { type: String, required: true, trim: true },
