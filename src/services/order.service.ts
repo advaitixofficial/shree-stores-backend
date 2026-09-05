@@ -223,9 +223,16 @@ export class OrderService {
       // Search for users matching name or phone
       const matchedUsers = await User.find({
         $or: [
-          { firstName: { $regex: searchTerm, $options: 'i' } },
-          { lastName: { $regex: searchTerm, $options: 'i' } },
-          { phone: { $regex: searchTerm, $options: 'i' } }
+          { phone: { $regex: searchTerm, $options: 'i' } },
+          {
+            $expr: {
+              $regexMatch: {
+                input: { $concat: [{ $ifNull: ["$firstName", ""] }, " ", { $ifNull: ["$lastName", ""] }] },
+                regex: searchTerm,
+                options: "i"
+              }
+            }
+          }
         ]
       }).select('_id');
       const userIds = matchedUsers.map(u => u._id);
