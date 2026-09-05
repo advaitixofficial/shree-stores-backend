@@ -50,4 +50,17 @@ export class UserService {
 
     return user;
   }
+
+  /**
+   * Update user's Expo push token for push notifications.
+   */
+  static async updatePushToken(userId: string, pushToken: string) {
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { pushToken } },
+      { new: true }
+    ).lean();
+    if (!updatedUser) throw new NotFoundError('User not found');
+    return updatedUser;
+  }
 }

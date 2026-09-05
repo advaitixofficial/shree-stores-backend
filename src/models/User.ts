@@ -15,6 +15,7 @@ const UserSchema = new Schema<IUser>(
     isActive: { type: Boolean, default: true },
     isVerified: { type: Boolean, default: false },
     preferredLanguage: { type: String, enum: ['en', 'hi'], default: 'en' },
+    pushToken: { type: String, trim: true },
     lastLoginAt: { type: Date },
   },
   {

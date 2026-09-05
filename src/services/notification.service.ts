@@ -4,6 +4,7 @@
 // ============================================================
 
 import { Notification } from '../models/Notification';
+import { User } from '../models/User';
 import { getIO } from '../config/socket';
 import { logger } from '../utils/logger';
 import { buildPaginationMeta } from '../utils/helpers';
@@ -14,7 +15,37 @@ export const ADMIN_RECIPIENT_ID = new mongoose.Types.ObjectId('00000000000000000
 
 export class NotificationService {
   /**
-   * Create a notification and dispatch it in real-time via sockets.
+   * Helper: Send Push Notification via Expo API
+   */
+  static async sendExpoPushNotification(messages: Array<{
+    to: string;
+    sound?: string;
+    title: string;
+    body: string;
+    data?: any;
+    channelId?: string;
+    priority?: string;
+  }>) {
+    try {
+      if (!messages || messages.length === 0) return;
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Accept-encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messages),
+      });
+      const resData = await response.json();
+      logger.info({ resData }, 'Expo push notification response');
+    } catch (err) {
+      logger.error({ err }, 'Failed to send Expo push notification');
+    }
+  }
+
+  /**
+   * Create a notification and dispatch it in real-time via sockets & push.
    */
   static async createNotification(data: {
     recipientType: 'CUSTOMER' | 'ADMIN';
@@ -52,6 +83,44 @@ export class NotificationService {
         }
       } catch (socketErr) {
         logger.warn({ err: socketErr }, 'Socket dispatch failed for notification (socket server might not be running in tests)');
+      }
+
+      // Dispatch Push Notification (Expo) to mobile devices
+      if (data.recipientType === 'CUSTOMER') {
+        try {
+          const BROADCAST_ID = new mongoose.Types.ObjectId('000000000000000000000000');
+          if (recipientId.toString() === BROADCAST_ID.toString()) {
+            const users = await User.find({ pushToken: { $exists: true, $ne: '' } }).select('pushToken');
+            const pushMessages = users
+              .map((u) => u.pushToken)
+              .filter((token): token is string => !!token && (token.startsWith('ExponentPushToken') || token.startsWith('ExpoPushToken')))
+              .map((token) => ({
+                to: token,
+                sound: 'default',
+                title: data.title,
+                body: data.message,
+                data: data.payload || {},
+                channelId: 'default',
+                priority: 'high',
+              }));
+            this.sendExpoPushNotification(pushMessages);
+          } else {
+            const user = await User.findById(recipientId).select('pushToken');
+            if (user && user.pushToken && (user.pushToken.startsWith('ExponentPushToken') || user.pushToken.startsWith('ExpoPushToken'))) {
+              this.sendExpoPushNotification([{
+                to: user.pushToken,
+                sound: 'default',
+                title: data.title,
+                body: data.message,
+                data: data.payload || {},
+                channelId: 'default',
+                priority: 'high',
+              }]);
+            }
+          }
+        } catch (pushErr) {
+          logger.warn({ err: pushErr }, 'Push notification dispatch failed');
+        }
       }
 
       return notification;

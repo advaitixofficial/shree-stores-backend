@@ -35,4 +35,15 @@ export class UserController {
       next(error);
     }
   }
+
+  static async updatePushToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.userId!;
+      const { pushToken } = req.body;
+      const user = await UserService.updatePushToken(userId, pushToken);
+      sendSuccess(res, user, 'Push token updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

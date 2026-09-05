@@ -57,6 +57,7 @@ export interface IUser extends Document {
   isActive: boolean;
   isVerified: boolean;
   preferredLanguage: 'en' | 'hi';
+  pushToken?: string;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
