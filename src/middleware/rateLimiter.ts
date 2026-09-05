@@ -8,6 +8,7 @@ const createLimiter = (windowMs: number, max: number, message: string) =>
     max,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
     handler: (_req, _res, next) => {
       next(new TooManyRequestsError(message));
     },

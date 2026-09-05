@@ -3,6 +3,7 @@ import { Order } from '../models/Order';
 import { NotificationService } from './notification.service';
 import { runInTransaction } from '../utils/transaction';
 import { Address } from '../models/Address';
+import { User } from '../models/User';
 import { StoreSettings } from '../models/StoreSettings';
 import { CartService } from './cart.service';
 import { CouponService } from './coupon.service';
@@ -216,7 +217,24 @@ export class OrderService {
 
     if (filters.status) query.orderStatus = filters.status;
     if (filters.paymentStatus) query.paymentStatus = filters.paymentStatus;
-    if (filters.orderNumber) query.orderNumber = { $regex: filters.orderNumber, $options: 'i' };
+    
+    if (filters.orderNumber) {
+      const searchTerm = filters.orderNumber;
+      // Search for users matching name or phone
+      const matchedUsers = await User.find({
+        $or: [
+          { firstName: { $regex: searchTerm, $options: 'i' } },
+          { lastName: { $regex: searchTerm, $options: 'i' } },
+          { phone: { $regex: searchTerm, $options: 'i' } }
+        ]
+      }).select('_id');
+      const userIds = matchedUsers.map(u => u._id);
+
+      query.$or = [
+        { orderNumber: { $regex: searchTerm, $options: 'i' } },
+        { user: { $in: userIds } }
+      ];
+    }
 
     const [orders, total] = await Promise.all([
       Order.find(query)

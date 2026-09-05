@@ -8,6 +8,9 @@ import routes from './routes';
 
 const app = express();
 
+// Trust first proxy (Render / Nginx / Cloudflare load balancer)
+app.set('trust proxy', 1);
+
 // Security and compression middleware
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
@@ -17,9 +20,8 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Apply rate limiting to all requests in production
+// Apply global rate limiting in production
 if (env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1); // Trust first proxy if behind Nginx/ELB
   app.use(globalLimiter);
 }
 
