@@ -66,4 +66,14 @@ export class AdminAuthService {
     }
     return admin;
   }
+
+  /**
+   * Update Admin Push Token.
+   */
+  static async updatePushToken(adminId: string, pushToken: string) {
+    const admin = await Admin.findByIdAndUpdate(adminId, { pushToken }, { new: true });
+    if (!admin) throw new UnauthorizedError('Admin not found');
+    return admin;
+  }
 }
+

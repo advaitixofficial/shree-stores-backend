@@ -22,6 +22,7 @@ const AdminSchema = new Schema<IAdmin>(
     loginAttempts: { type: Number, default: 0 },
     lockUntil: { type: Date },
     lastLoginAt: { type: Date },
+    pushToken: { type: String, trim: true },
   },
   {
     timestamps: true,

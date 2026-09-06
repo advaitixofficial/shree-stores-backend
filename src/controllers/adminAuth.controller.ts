@@ -25,4 +25,15 @@ export class AdminAuthController {
       next(error);
     }
   }
+
+  static async updatePushToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const adminId = req.adminId!;
+      const { pushToken } = req.body;
+      await AdminAuthService.updatePushToken(adminId, pushToken);
+      sendSuccess(res, null, 'Push token updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

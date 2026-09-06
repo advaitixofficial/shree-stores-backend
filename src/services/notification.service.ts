@@ -121,6 +121,26 @@ export class NotificationService {
         } catch (pushErr) {
           logger.warn({ err: pushErr }, 'Push notification dispatch failed');
         }
+      } else if (data.recipientType === 'ADMIN') {
+        try {
+          const Admin = mongoose.model('Admin');
+          const admins = await Admin.find({ pushToken: { $exists: true, $ne: '' } }).select('pushToken');
+          const pushMessages = admins
+            .map((a: any) => a.pushToken)
+            .filter((token: string) => !!token && (token.startsWith('ExponentPushToken') || token.startsWith('ExpoPushToken')))
+            .map((token: string) => ({
+              to: token,
+              sound: 'default',
+              title: data.title,
+              body: data.message,
+              data: data.payload || {},
+              channelId: 'default',
+              priority: 'high',
+            }));
+          this.sendExpoPushNotification(pushMessages);
+        } catch (pushErr) {
+          logger.warn({ err: pushErr }, 'Admin Push notification dispatch failed');
+        }
       }
 
       return notification;
