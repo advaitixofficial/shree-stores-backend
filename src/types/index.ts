@@ -79,6 +79,7 @@ export interface IAdmin extends Document {
   loginAttempts: number;
   lockUntil?: Date;
   lastLoginAt?: Date;
+  pushToken?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
