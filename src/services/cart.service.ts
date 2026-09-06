@@ -28,6 +28,18 @@ export class CartService {
     
     if (!cart) throw new Error('Failed to create cart');
 
+    // Prune items where product was hard deleted (product is null)
+    const originalLength = cart.items.length;
+    cart.items = cart.items.filter(item => item.product != null);
+
+    if (cart.items.length !== originalLength) {
+      // Save the pruned cart back to the database
+      await Cart.updateOne(
+        { _id: cart._id },
+        { items: cart.items.map(i => ({ product: (i.product as any)._id, quantity: i.quantity })) }
+      );
+    }
+
     return cart;
   }
 
