@@ -74,11 +74,32 @@ export class ProductService {
   static async createProduct(data: any, files?: Express.Multer.File[]) {
     // Generate slug
     const slug = generateSlug(data.name);
-    const existing = await Product.findOne({ $or: [{ slug }, { sku: data.sku }] }).lean();
+    const existing = await Product.findOne({ slug }).lean();
     
     if (existing) {
-      if (existing.slug === slug) throw new BadRequestError('Product with similar name already exists');
-      if (existing.sku === data.sku) throw new BadRequestError('Product with this SKU already exists');
+      throw new BadRequestError('Product with similar name already exists');
+    }
+
+    // Process variants
+    if (!data.variants || !Array.isArray(data.variants) || data.variants.length === 0) {
+      throw new BadRequestError('At least one variant is required');
+    }
+    
+    // Ensure all variants have a SKU and valid data
+    const processedVariants = data.variants.map((v: any) => ({
+      ...v,
+      sku: v.sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      mrp: v.mrp !== undefined && v.mrp !== '' ? Number(v.mrp) : Number(v.price),
+      price: Number(v.price),
+      stock: Number(v.stock) || 0,
+      unitValue: Number(v.unitValue),
+      isAvailable: Number(v.stock) > 0,
+    }));
+    
+    // Check for duplicate variant quantities
+    const variantKeys = processedVariants.map((v: any) => `${v.unitValue}-${v.unit}`);
+    if (new Set(variantKeys).size !== variantKeys.length) {
+      throw new BadRequestError('Duplicate variants are not allowed');
     }
 
     // Handle image uploads
@@ -98,12 +119,11 @@ export class ProductService {
       nameHindi: data.nameHindi || data.name,
       description: data.description || data.name,
       descriptionHindi: data.descriptionHindi || data.description || data.name,
-      sku: data.sku || `SKU-${Date.now()}`,
-      mrp: data.mrp !== undefined && data.mrp !== '' ? data.mrp : data.price,
       slug,
       images,
       thumbnail,
-      isAvailable: data.stock > 0,
+      variants: processedVariants,
+      isAvailable: processedVariants.some((v: any) => v.stock > 0),
     });
 
     // Update category product count
@@ -122,14 +142,28 @@ export class ProductService {
       if (existing) throw new BadRequestError('Product with similar name already exists');
     }
 
-    if (data.sku) {
-      const existing = await Product.findOne({ sku: data.sku, _id: { $ne: id } }).lean();
-      if (existing) throw new BadRequestError('Product with this SKU already exists');
-    }
-
-    // Auto-update availability based on stock if stock is provided
-    if (data.stock !== undefined) {
-      data.isAvailable = data.stock > 0;
+    if (data.variants && Array.isArray(data.variants)) {
+      if (data.variants.length === 0) {
+        throw new BadRequestError('At least one variant is required');
+      }
+      
+      data.variants = data.variants.map((v: any) => ({
+        ...v,
+        sku: v.sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        mrp: v.mrp !== undefined && v.mrp !== '' ? Number(v.mrp) : Number(v.price),
+        price: Number(v.price),
+        stock: Number(v.stock) || 0,
+        unitValue: Number(v.unitValue),
+        isAvailable: Number(v.stock) > 0,
+      }));
+      
+      // Check for duplicate variant quantities
+      const variantKeys = data.variants.map((v: any) => `${v.unitValue}-${v.unit}`);
+      if (new Set(variantKeys).size !== variantKeys.length) {
+        throw new BadRequestError('Duplicate variants are not allowed');
+      }
+      
+      data.isAvailable = data.variants.some((v: any) => v.stock > 0);
     }
 
     const product = await Product.findByIdAndUpdate(id, { $set: data }, { new: true })
@@ -141,19 +175,31 @@ export class ProductService {
   }
 
   /**
-   * Admin: Update stock safely
+   * Admin: Update stock safely (for a specific variant)
    */
-  static async updateStock(id: string, stock: number) {
+  static async updateStock(id: string, variantId: string, stock: number) {
     const isAvailable = stock > 0;
-    const product = await Product.findByIdAndUpdate(
-      id,
-      { $set: { stock, isAvailable } },
+    
+    // Find the product and update the specific variant's stock
+    const product = await Product.findOneAndUpdate(
+      { _id: id, 'variants._id': variantId },
+      { 
+        $set: { 
+          'variants.$.stock': stock,
+          'variants.$.isAvailable': isAvailable 
+        } 
+      },
       { new: true }
     ).lean();
 
-    if (!product) throw new NotFoundError('Product not found');
+    if (!product) throw new NotFoundError('Product or variant not found');
     
-    // Optional: trigger socket event for inventory update
+    // Update parent product availability if needed
+    const anyAvailable = product.variants.some((v: any) => v.stock > 0);
+    if (product.isAvailable !== anyAvailable) {
+      await Product.findByIdAndUpdate(id, { isAvailable: anyAvailable });
+    }
+
     return product;
   }
 

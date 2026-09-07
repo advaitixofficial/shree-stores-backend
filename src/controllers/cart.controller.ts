@@ -14,8 +14,8 @@ export class CartController {
 
   static async addItem(req: Request, res: Response, next: NextFunction) {
     try {
-      const { productId, quantity = 1 } = req.body;
-      const cart = await CartService.addToCart(req.userId!, productId, quantity);
+      const { productId, variantId, quantity = 1 } = req.body;
+      const cart = await CartService.addToCart(req.userId!, productId, variantId, quantity);
       sendSuccess(res, cart, 'Item added to cart');
     } catch (error) {
       next(error);
@@ -24,9 +24,9 @@ export class CartController {
 
   static async updateItem(req: Request, res: Response, next: NextFunction) {
     try {
-      const { quantity } = req.body;
+      const { quantity, variantId } = req.body;
       const { productId } = req.params;
-      const cart = await CartService.updateCartItem(req.userId!, productId, quantity);
+      const cart = await CartService.updateCartItem(req.userId!, productId, variantId, quantity);
       sendSuccess(res, cart, 'Cart item updated');
     } catch (error) {
       next(error);
@@ -35,7 +35,7 @@ export class CartController {
 
   static async removeItem(req: Request, res: Response, next: NextFunction) {
     try {
-      const cart = await CartService.removeItem(req.userId!, req.params.productId);
+      const cart = await CartService.removeItem(req.userId!, req.params.productId, req.params.variantId);
       sendSuccess(res, cart, 'Item removed from cart');
     } catch (error) {
       next(error);

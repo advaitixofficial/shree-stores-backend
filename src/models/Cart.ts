@@ -3,6 +3,7 @@ import type { ICart } from '../types';
 
 const CartItemSchema = new Schema({
   product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+  variantId: { type: Schema.Types.ObjectId }, // Optional for backward compatibility with old carts
   quantity: { type: Number, required: true, min: 1 },
 }, { _id: false });
 

@@ -41,7 +41,11 @@ export class ProductController {
   static async createProduct(req: Request, res: Response, next: NextFunction) {
     try {
       const files = req.files as Express.Multer.File[] | undefined;
-      const product = await ProductService.createProduct(req.body, files);
+      const body = { ...req.body };
+      if (typeof body.variants === 'string') {
+        try { body.variants = JSON.parse(body.variants); } catch (e) {}
+      }
+      const product = await ProductService.createProduct(body, files);
       sendSuccess(res, product, 'Product created successfully', 201);
     } catch (error) {
       next(error);
@@ -50,7 +54,11 @@ export class ProductController {
 
   static async updateProduct(req: Request, res: Response, next: NextFunction) {
     try {
-      const product = await ProductService.updateProduct(req.params.id, req.body);
+      const body = { ...req.body };
+      if (typeof body.variants === 'string') {
+        try { body.variants = JSON.parse(body.variants); } catch (e) {}
+      }
+      const product = await ProductService.updateProduct(req.params.id, body);
       sendSuccess(res, product, 'Product updated successfully');
     } catch (error) {
       next(error);
@@ -59,8 +67,9 @@ export class ProductController {
 
   static async updateStock(req: Request, res: Response, next: NextFunction) {
     try {
-      const { stock } = req.body;
-      const product = await ProductService.updateStock(req.params.id, Number(stock));
+      const { variantId, stock } = req.body;
+      if (!variantId) throw new BadRequestError('variantId is required');
+      const product = await ProductService.updateStock(req.params.id, variantId, Number(stock));
       sendSuccess(res, product, 'Stock updated successfully');
     } catch (error) {
       next(error);

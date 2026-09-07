@@ -20,6 +20,6 @@ router.put('/coupons/:id', validate(updateCouponSchema), CouponController.update
 router.delete('/coupons/:id', CouponController.deleteCoupon);
 
 // Push Notifications
-router.post('/notifications', validate(createNotificationSchema), NotificationController.sendAdminPushNotification);
+router.post('/notifications', upload.single('image'), validate(createNotificationSchema), NotificationController.sendAdminPushNotification);
 
 export default router;

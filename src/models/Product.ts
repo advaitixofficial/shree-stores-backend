@@ -6,6 +6,18 @@ const ImageAssetSchema = new Schema({
   publicId: { type: String, required: true },
 }, { _id: false });
 
+const VariantSchema = new Schema({
+  unit: { type: String, required: true, trim: true },
+  unitValue: { type: Number, required: true },
+  price: { type: Number, required: true, min: 0 },
+  mrp: { type: Number, min: 0 },
+  stock: { type: Number, required: true, min: 0, default: 0 },
+  sku: { type: String, trim: true },
+  isAvailable: { type: Boolean, default: true },
+  discountType: { type: String, enum: ['PERCENTAGE', 'FIXED'] },
+  discountValue: { type: Number, min: 0 },
+});
+
 const ProductSchema = new Schema<IProduct>(
   {
     name: { type: String, required: true, trim: true },
@@ -17,14 +29,20 @@ const ProductSchema = new Schema<IProduct>(
     thumbnail: ImageAssetSchema,
     category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
     brand: { type: String, trim: true },
-    sku: { type: String, required: true, unique: true, trim: true },
-    unit: { type: String, required: true, trim: true }, // e.g., 'kg', 'g', 'L', 'piece'
-    unitValue: { type: Number, required: true, default: 1 }, // e.g., 1, 500, 1.5
-    price: { type: Number, required: true, min: 0 },
+    
+    // Legacy fields
+    sku: { type: String, trim: true }, // Removed required & unique constraint because multiple variants will have skus
+    unit: { type: String, trim: true }, 
+    unitValue: { type: Number, default: 1 }, 
+    price: { type: Number, min: 0 },
     mrp: { type: Number, min: 0 },
     discountType: { type: String, enum: ['PERCENTAGE', 'FIXED'] },
     discountValue: { type: Number, min: 0 },
-    stock: { type: Number, required: true, min: 0, default: 0 },
+    stock: { type: Number, min: 0, default: 0 },
+    
+    // New Variants array
+    variants: [VariantSchema],
+
     lowStockThreshold: { type: Number, required: true, default: 5 },
     isAvailable: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false },

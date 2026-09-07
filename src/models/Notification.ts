@@ -10,6 +10,7 @@ const NotificationSchema = new Schema<INotification>(
     message: { type: String, required: true },
     messageHindi: { type: String },
     type: { type: String, required: true }, // NotificationType enum
+    imageUrl: { type: String },
     data: { type: Schema.Types.Mixed },
     isRead: { type: Boolean, default: false },
     readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],

@@ -3,6 +3,7 @@ import type { IOrder } from '../types';
 
 const OrderItemSchema = new Schema({
   productId: { type: Schema.Types.ObjectId, required: true },
+  variantId: { type: Schema.Types.ObjectId },
   productName: { type: String, required: true },
   productNameHindi: { type: String, required: true },
   image: {
@@ -11,6 +12,7 @@ const OrderItemSchema = new Schema({
   },
   quantity: { type: Number, required: true, min: 1 },
   unit: { type: String, required: true },
+  unitValue: { type: Number },
   price: { type: Number, required: true },
   mrp: { type: Number, required: true },
   total: { type: Number, required: true },

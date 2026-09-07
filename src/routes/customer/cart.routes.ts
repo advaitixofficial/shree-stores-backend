@@ -10,7 +10,7 @@ router.use(authenticateCustomer);
 router.get('/', CartController.getCart);
 router.post('/items', validate(addToCartSchema), CartController.addItem);
 router.put('/items/:productId', validate(updateCartItemSchema), CartController.updateItem);
-router.delete('/items/:productId', CartController.removeItem);
+router.delete('/items/:productId/:variantId', CartController.removeItem);
 router.delete('/', CartController.clearCart);
 router.post('/validate', CartController.validateCart);
 

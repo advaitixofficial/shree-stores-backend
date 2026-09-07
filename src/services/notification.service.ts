@@ -55,6 +55,7 @@ export class NotificationService {
     message: string;
     messageHindi?: string;
     type: string;
+    imageUrl?: string;
     payload?: any;
   }) {
     try {
@@ -70,6 +71,7 @@ export class NotificationService {
         message: data.message,
         messageHindi: data.messageHindi,
         type: data.type,
+        imageUrl: data.imageUrl,
         data: data.payload,
       });
 
@@ -100,6 +102,7 @@ export class NotificationService {
                 title: data.title,
                 body: data.message,
                 data: data.payload || {},
+                ...(data.imageUrl ? { image: data.imageUrl } : {}),
                 channelId: 'default',
                 priority: 'high',
               }));
@@ -113,6 +116,7 @@ export class NotificationService {
                 title: data.title,
                 body: data.message,
                 data: data.payload || {},
+                ...(data.imageUrl ? { image: data.imageUrl } : {}),
                 channelId: 'default',
                 priority: 'high',
               }]);

@@ -112,6 +112,19 @@ export interface ImageAsset {
 
 export type DiscountType = 'PERCENTAGE' | 'FIXED';
 
+export interface IVariant {
+  _id?: Types.ObjectId;
+  unit: string;
+  unitValue: number;
+  price: number;
+  mrp: number;
+  stock: number;
+  sku?: string;
+  isAvailable: boolean;
+  discountType?: DiscountType;
+  discountValue?: number;
+}
+
 export interface IProduct extends Document {
   name: string;
   nameHindi: string;
@@ -122,15 +135,21 @@ export interface IProduct extends Document {
   thumbnail?: ImageAsset;
   category: Types.ObjectId;
   brand?: string;
-  sku: string;
-  unit: string;
-  unitValue: number;
-  price: number;
-  mrp: number;
+  
+  // Legacy fields (optional now, to be removed later)
+  sku?: string;
+  unit?: string;
+  unitValue?: number;
+  price?: number;
+  mrp?: number;
   discountType?: DiscountType;
   discountValue?: number;
-  stock: number;
+  stock?: number;
   lowStockThreshold: number;
+  
+  // New variants array
+  variants: IVariant[];
+  
   isAvailable: boolean;
   isFeatured: boolean;
   isActive: boolean;
@@ -143,6 +162,7 @@ export interface IProduct extends Document {
 
 export interface ICartItem {
   product: Types.ObjectId;
+  variantId?: Types.ObjectId; // Make it optional for backward compatibility until migration is done
   quantity: number;
 }
 
@@ -192,11 +212,13 @@ export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
 
 export interface IOrderItem {
   productId: Types.ObjectId;
+  variantId?: Types.ObjectId;
   productName: string;
   productNameHindi: string;
   image?: ImageAsset;
   quantity: number;
   unit: string;
+  unitValue?: number;
   price: number;
   mrp: number;
   total: number;
@@ -337,6 +359,7 @@ export interface INotification extends Document {
   message: string;
   messageHindi?: string;
   type: NotificationType;
+  imageUrl?: string;
   data?: Record<string, unknown>;
   isRead: boolean;
   readBy?: Types.ObjectId[];

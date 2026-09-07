@@ -79,30 +79,57 @@ export class OrderService {
       // 5. Build order snapshot items
       const orderItems = cartVal.validItems.map((item) => ({
         productId: item.product._id,
+        variantId: item.variantId,
         productName: item.product.name,
         productNameHindi: item.product.nameHindi,
         image: item.product.thumbnail,
         quantity: item.quantity,
-        unit: item.product.unit,
+        unit: item.unitSnapshot,
+        unitValue: item.unitValueSnapshot,
         price: item.priceSnapshot,
         mrp: item.mrpSnapshot,
         total: item.total,
       }));
 
-      // 6. Deduct Inventory
+      // 6. Deduct Inventory (from variants)
       for (const item of cartVal.validItems) {
-        const updated = await mongoose.model('Product').findOneAndUpdate(
-          { _id: item.product._id, stock: { $gte: item.quantity } },
-          { $inc: { stock: -item.quantity } },
+        const productModel = mongoose.model('Product');
+        
+        // Find product with the specific variant having enough stock
+        const updated = await productModel.findOneAndUpdate(
+          { 
+            _id: item.product._id, 
+            'variants._id': item.variantId,
+            'variants.stock': { $gte: item.quantity } 
+          },
+          { 
+            $inc: { 'variants.$.stock': -item.quantity } 
+          },
           { session, new: true }
         );
+
         if (!updated) {
           throw new BadRequestError(`Insufficient stock for ${item.product.name} during checkout`);
         }
-        // Auto mark unavailable if stock hits 0
-        if (updated.stock === 0) {
-          updated.isAvailable = false;
-          await updated.save({ session });
+        
+        // If the variant stock became 0, update variant availability
+        const variant = updated.variants.find((v: any) => v._id.toString() === item.variantId.toString());
+        if (variant && variant.stock <= 0) {
+          await productModel.updateOne(
+            { _id: item.product._id, 'variants._id': item.variantId },
+            { $set: { 'variants.$.isAvailable': false } },
+            { session: session || undefined }
+          );
+        }
+
+        // Check overall product availability
+        const anyAvailable = updated.variants.some((v: any) => v.stock > 0);
+        if (updated.isAvailable !== anyAvailable) {
+          await productModel.updateOne(
+            { _id: item.product._id },
+            { $set: { isAvailable: anyAvailable } },
+            { session: session || undefined }
+          );
         }
       }
 
